@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect } from 'react';
 import { createChart, CrosshairMode } from "lightweight-charts";
 
 const lunaUrl = 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=LUNA&market=USD&apikey=CT4XD7F3RMG3G1PG';
@@ -7,12 +7,6 @@ async function getData() {
   const response = await fetch(lunaUrl)
   return response.json()
 }
-
-const directionEmojis = {
-  up: '🚀',
-  down: '💩',
-  '': '',
-};
 
 var chart = createChart(document.body, {
 	width: window.innerWidth,
@@ -56,8 +50,6 @@ var candleSeries = chart.addCandlestickSeries({
 });
 
 function App() {
-  const [price,setPrice] = useState(-1);
-  const [prevPrice, setPrevPrice] = useState(-1);
 
   useEffect(() => {
     let timeoutId;
@@ -78,14 +70,7 @@ function App() {
           prices.push(entry)
           
         }
-        const rprices = [];
-        for (var i = prices.length -1; i >= 0; i--){
-          rprices.push(prices[i])
-        }
-
-        setPrevPrice(price);
-        setPrice(prices[0]['close']);
-        candleSeries.setData(rprices);
+        candleSeries.setData(prices.reverse());
 
       } catch (error) {
         console.log(error)
@@ -99,8 +84,6 @@ function App() {
       clearTimeout(timeoutId);
     }
   }, []);
-
-  const direction = useMemo(() => prevPrice < price ? 'up' : prevPrice > price ? 'down' : '', [prevPrice, price]);
   
   return (
     <div>
@@ -110,3 +93,4 @@ function App() {
 }
 
 export default App;
+

@@ -49,6 +49,18 @@ var candleSeries = chart.addCandlestickSeries({
   wickUpColor: "#838ca1"
 });
 
+var volumeSeries = chart.addHistogramSeries({
+	color: '#26a69a',
+	priceFormat: {
+		type: 'volume',
+	},
+	priceScaleId: '',
+	scaleMargins: {
+		top: 0.8,
+		bottom: 0,
+	},
+});
+
 function App() {
 
   useEffect(() => {
@@ -57,20 +69,29 @@ function App() {
       try {
         const data = await getData();
         const luna = data['Time Series (Digital Currency Daily)'];
-        
+        //console.log(luna)
         const prices = [];
+        const volumes = [];
         for (const property in luna) {
-          var entry = {
+          var candleData = {
             time: property.toString(),
             open: Number(`${luna[property]['1a. open (USD)']}`),
             high: Number(`${luna[property]['2a. high (USD)']}`),
             low: Number(`${luna[property]['3a. low (USD)']}`),
             close: Number(`${luna[property]['4a. close (USD)']}`),
           }
-          prices.push(entry)
+          prices.push(candleData);
+
+          var volumeData = {
+            time: property.toString(),
+            value: Number(`${luna[property]['5. volume']}`),
+            color: candleData['open'] < candleData['close'] ? "red" : "green",
+          }
+          volumes.push(volumeData);
           
         }
         candleSeries.setData(prices.reverse());
+        volumeSeries.setData(volumes.reverse());
 
       } catch (error) {
         console.log(error)
@@ -93,4 +114,3 @@ function App() {
 }
 
 export default App;
-

@@ -6,6 +6,10 @@ const lunaUrl = 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAI
 var container = document.createElement('div');
 document.body.appendChild(container);
 
+var legend = document.createElement('div');
+legend.className = 'sma-legend';
+container.appendChild(legend);
+
 async function getData() {
   const response = await fetch(lunaUrl)
   return response.json()
@@ -64,8 +68,18 @@ var volumeSeries = chart.addHistogramSeries({
 	},
 });
 
-var smaLine = chart.addLineSeries({
+var smaLine7 = chart.addLineSeries({
 	color: 'rgba(4, 111, 232, 1)',
+	lineWidth: 2,
+});
+
+var smaLine25 = chart.addLineSeries({
+	color: 'rgba(211, 4, 4, 1)',
+	lineWidth: 2,
+});
+
+var smaLine99 = chart.addLineSeries({
+	color: 'rgba(4, 211, 4, 1)',
 	lineWidth: 2,
 });
 
@@ -73,14 +87,15 @@ function App() {
   useEffect(() => {
     let timeoutId;
 
-    function setLegendText(priceValue) {
+    function setLegendText(priceValue, number) {
       let val = 'n/a';
+      let num = number;
       if (priceValue !== undefined) {
         val = (Math.round(priceValue * 100) / 100).toFixed(2);
       }
-      legend.innerHTML = 'MA10 <span style="color:rgba(4, 111, 232, 1)">' + val + '</span>';
+      legend.innerHTML = 'MA(' + num + '): <span style="color:rgba(4, 111, 232, 1)">' + val + '</span>';
     }
-    
+
     function calculateSMA(data, count){
       var avg = function(data) {
         var sum = 0;
@@ -123,13 +138,22 @@ function App() {
         candleSeries.setData(prices.reverse());
         volumeSeries.setData(volumes.reverse());
 
-        var smaData = calculateSMA(prices, 10)
-        smaLine.setData(smaData);
+        var smaData7= calculateSMA(prices, 7)
+        smaLine7.setData(smaData7);
+        setLegendText(smaData7[smaData7.length - 1].value, 7);
 
-        setLegendText(smaData[smaData.length - 1].value);
+        var smaData25= calculateSMA(prices, 25)
+        smaLine25.setData(smaData25);
+        setLegendText(smaData25[smaData25.length - 1].value, 25);
+
+        var smaData99= calculateSMA(prices, 99)
+        smaLine99.setData(smaData99);
+        setLegendText(smaData99[smaData99.length - 1].value, 99);
 
         chart.subscribeCrosshairMove((param) => {
-	        setLegendText(param.seriesPrices.get(smaLine));
+	        setLegendText(param.seriesPrices.get(smaLine7));
+          setLegendText(param.seriesPrices.get(smaLine25));
+          setLegendText(param.seriesPrices.get(smaLine99));
         });
         
       } catch (error) {
@@ -137,14 +161,6 @@ function App() {
       }
       timeoutId = setTimeout(getLatestPrice, 100000);
     }
-
-
-    var legend = document.createElement('div');
-    legend.className = 'sma-legend';
-    container.appendChild(legend);
-    legend.style.display = 'block';
-    legend.style.left = 3 + 'px';
-    legend.style.top = 3 + 'px';
     
     getLatestPrice();
 

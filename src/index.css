@@ -17,4 +17,7 @@ body {
 	text-align: left;
 	z-index: 1000;
 	pointer-events: none;
+  display: block;
+  left: 30px;
+  top: 30px;
 }

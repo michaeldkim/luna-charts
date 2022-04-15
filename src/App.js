@@ -3,14 +3,17 @@ import { createChart, CrosshairMode } from "lightweight-charts";
 
 const lunaUrl = 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=LUNA&market=USD&apikey=CT4XD7F3RMG3G1PG';
 
+var container = document.createElement('div');
+document.body.appendChild(container);
+
 async function getData() {
   const response = await fetch(lunaUrl)
   return response.json()
 }
 
-var chart = createChart(document.body, {
+var chart = createChart(container, {
 	width: window.innerWidth,
-  height: window.innerHeight,
+  height: window.innerHeight - 1,
 	layout: {
 		backgroundColor: '#253248',
 		textColor: 'rgba(255, 255, 255, 0.9)',
@@ -61,15 +64,43 @@ var volumeSeries = chart.addHistogramSeries({
 	},
 });
 
-function App() {
+var smaLine = chart.addLineSeries({
+	color: 'rgba(4, 111, 232, 1)',
+	lineWidth: 2,
+});
 
+function App() {
   useEffect(() => {
     let timeoutId;
+
+    function setLegendText(priceValue) {
+      let val = 'n/a';
+      if (priceValue !== undefined) {
+        val = (Math.round(priceValue * 100) / 100).toFixed(2);
+      }
+      legend.innerHTML = 'MA10 <span style="color:rgba(4, 111, 232, 1)">' + val + '</span>';
+    }
+    
+    function calculateSMA(data, count){
+      var avg = function(data) {
+        var sum = 0;
+        for (var i = 0; i < data.length; i++) {
+           sum += data[i].close;
+        }
+        return sum / data.length;
+      };
+      var result = [];
+      for (var i=count - 1, len=data.length; i < len; i++){
+        var val = avg(data.slice(i - count + 1, i));
+        result.push({ time: data[i].time, value: val});
+      }
+      return result;
+    }
+
     async function getLatestPrice(){
       try {
         const data = await getData();
         const luna = data['Time Series (Digital Currency Daily)'];
-        //console.log(luna)
         const prices = [];
         const volumes = [];
         for (const property in luna) {
@@ -85,20 +116,36 @@ function App() {
           var volumeData = {
             time: property.toString(),
             value: Number(`${luna[property]['5. volume']}`),
-            color: candleData['open'] < candleData['close'] ? "red" : "green",
+            color: candleData['open'] > candleData['close'] ? "rgba(255,82,82, 0.5)" : "rgba(0, 150, 136, 0.5)",
           }
           volumes.push(volumeData);
-          
         }
         candleSeries.setData(prices.reverse());
         volumeSeries.setData(volumes.reverse());
 
+        var smaData = calculateSMA(prices, 10)
+        smaLine.setData(smaData);
+
+        setLegendText(smaData[smaData.length - 1].value);
+
+        chart.subscribeCrosshairMove((param) => {
+	        setLegendText(param.seriesPrices.get(smaLine));
+        });
+        
       } catch (error) {
         console.log(error)
       }
       timeoutId = setTimeout(getLatestPrice, 100000);
     }
 
+
+    var legend = document.createElement('div');
+    legend.className = 'sma-legend';
+    container.appendChild(legend);
+    legend.style.display = 'block';
+    legend.style.left = 3 + 'px';
+    legend.style.top = 3 + 'px';
+    
     getLatestPrice();
 
     return () => {
